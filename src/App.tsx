@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { 
   Users, 
   Calendar, 
@@ -33,6 +34,10 @@ import {
   Menu,
   VolumeX,
   Upload,
+  Copy,
+  ThumbsUp,
+  ThumbsDown,
+  Share2,
   X
 } from 'lucide-react';
 import { User, Project, Plan, ChatMessage } from './types';
@@ -41,6 +46,253 @@ import { analyzeProject, getDrillFeedback, getChatResponse } from './services/ge
 
 type RecordingScenario = 'all_connected' | 'gtv_only' | 'unbound_gtv';
 const heroImage = new URL('../images/IP.png', import.meta.url).href;
+
+const visitPlanMarkdown = `已为您制定好**2026年3月6日（明天）的项目拜访计划**。基于您当前负责的5个项目，结合客户意向强度、区域集中度及跟进紧迫性，采用“高优攻坚 + 区域聚类”策略，确保高效转化：
+
+---
+
+### 📅 明日拜访路线图：2026年3月6日
+
+---
+
+#### 🚀 第一优先级：全力攻坚（高意向/决策窗口期）
+
+##### **1. 生鲜配送 租赁 600平左右 仓储**
+- **客户**：钟先生（生鲜配送行业）
+- **区域**：上海市闵行区
+- **关键风险**：项目已停滞 **233天**，但属高意向（2级），且闵行高标仓资源稀缺。
+- **行动建议**：
+  - **电话切入**：“钟先生您好！我们系统显示您去年咨询过闵行600平左右的生鲜仓库，最近刚好有两个新放的仓配一体项目，月台和冷库配套比市面上多数房源更成熟，您这边项目还在推进的话，我发您资料先看看？”
+  - **钩子话术**：强调“新出高标仓，层高9米、双月台”，激发二次看房意愿。
+- **目标**：确认需求有效性，争取预约看房。
+
+##### **2. 机械加工+800+杜海泉**
+- **客户**：杜海泉（机械加工）
+- **区域**：河北省廊坊市固安县
+- **关键机会**：需求周期为“3”（可能3个月内用房），虽停滞219天，但固安厂房资源充足、易匹配。
+- **行动建议**：
+  - **电话回访**：“杜总好！之前帮您找固安800平左右的机加工厂房，最近这边有两个园区刚有补贴政策落地，适合机加企业入驻，您这周方便去看下吗？我帮您约一下。”
+  - **钩子话术**：突出“近期有政策补贴园区，层高和电力都达标”。
+- **目标**：判断是否仍需选址，推动二次带看或定房。
+
+---
+
+#### ⚠️ 第二优先级：意向确认与激活（中意向/需首访确认）
+
+##### **3. 安次机加工李总500**
+- **客户**：李总（机加工）
+- **区域**：河北省廊坊市安次区
+- **策略**：轻触达，确认状态。
+- **话术建议**：“李总好！我这边更新了一批安次区机加工厂房资源，其中有个600平带5吨行车的房源，特别适合您这行。您项目还在找地方的话，我发您视频先看看？”
+
+##### **4. 装修材料 1000 周女士**
+- **客户**：周女士（装修材料）
+- **区域**：河北省廊坊市固安县
+- **策略**：精准匹配高标厂房（层高8米+承重3吨）。
+- **话术建议**：“周女士您好！固安最近出了两处层高8米、承重达标的厂房，特别适合堆放大宗装修材料，您需要的话我发您资料？”
+
+> 💡 **区域协同提示**：杜海泉与周女士均在**固安县**，可安排同一天集中带看，提升效率。
+
+---
+
+#### 🍃 第三优先级：轻量维护（低意向/长线铺垫）
+
+##### **5. 倪总 汽车贴膜求租400广阳市区里**
+- **客户**：倪总（汽车贴膜）
+- **区域**：河北省廊坊市广阳区
+- **策略**：微信留言推荐临街厂房，维持联系。
+- **话术建议**：“倪总好！更新了一套广阳市区临街400平厂房，带展示窗和操作间，适合贴膜店，供您参考～”
+
+---
+
+### 📊 任务看板汇总
+
+| 客户 | 优先级 | 关键动作 | 核心价值点 | 预期结果 |
+|:---|:---:|:---|:---|:---|
+| **钟先生（生鲜配送）** | 高 | 电话+房源推荐 | 新出高标仓/稀缺区位 | 需求确认/约看 |
+| **杜海泉（机械加工）** | 高 | 电话回访+政策钩子 | 补贴园区/需求紧迫 | 二次带看/定房 |
+| **李总（机加工）** | 中 | 微信/电话轻触达 | 行车厂房/产业聚集 | 状态确认/激活 |
+| **周女士（装修材料）** | 中 | 电话回访 | 高层高+高承重 | 需求确认/推荐 |
+| **倪总（汽车贴膜）** | 低 | 微信留言 | 临街展示+操作间 | 线索过滤/维护 |
+
+---
+
+### 💡 金牌执行贴士
+1. **主攻双高项目**：明日重点突破**钟先生**与**杜海泉**，二者均为高意向且长期未跟进，转化窗口正在打开。
+2. **固安聚类拜访**：若杜海泉与周女士均有看房意向，可协调同日下午集中带看，节省时间成本。
+3. **闭环习惯**：每次通话后，请立即在GTV系统更新客户状态、顾虑点及下次跟进时间，避免信息断层。
+
+如需针对某一客户的**详细话术拆解**或**房源匹配清单**，随时告诉我，我可为您定制作战包。祝明日旗开得胜！`;
+
+const followUpStrategyMarkdown = `根据倪总项目的详细信息与历史跟进记录，现为其“汽车贴膜求租400㎡广阳市区里”项目制定如下经营策略，采用**问题-洞察-行动**的金字塔结构呈现：
+
+---
+
+### **倪总项目经营策略**
+
+#### **一、项目核心摘要**
+- **客户画像**：保定已有成功门店，计划异地扩张至廊坊广阳，属**流量依赖型To C服务**（汽车贴膜）。
+- **显性需求**：租赁400㎡“厂房”，但明确要求位于**广阳市中心正核心区域**，拒绝北旺、开发区等偏远地带。
+- **当前状态**：C级项目（未推进），因多次带看失败、意向房源房东问题及天气/距离借口，已实质停滞。
+
+#### **二、深层需求洞察**
+| 表面诉求 | 实际痛点 | 关键矛盾 |
+|--------|--------|--------|
+| “租厂房” | 需**临街展示面+自然客流** | 广阳核心区**无合规工业用地**，纯商铺难满足生产备案/环评 |
+| “要市中心” | 依赖**路过车主转化** | 客户将“厂房”误作载体类型，实则需**前店后仓式类商铺** |
+
+> 💡 **本质问题**：客户在用“厂房”框架寻找“商铺”，导致供需错配。
+
+#### **三、精准跟进策略**
+
+##### **1. 载体匹配方向**
+- **目标物业类型**：广阳老城区（如解放道、银河北路）**临街一层老旧工业/仓储用房**，具备：
+  - 可挂门头招牌
+  - 门前允许临时停车
+  - 水电独立开户
+  - 产权性质可注册个体工商户（不强求纯工业）
+
+##### **2. 关键话术与提问**
+- **价值传递话术**：  
+  > “这套不在园区，在解放道主干道旁，日均车流超2万辆，隔壁就是洗车店，天然导流。门头8米宽，晚上打灯特别醒目。”
+  
+- **需求澄清三问**：  
+  ① “您保定店的日均自然进店客户有多少？是否依赖线上引流？”  
+  ② “如果位置绝佳但产权是商服性质，能否接受注册个体户而非公司？”  
+  ③ “若面积350㎡但位置在十字路口，是否愿意压缩办公区？”
+
+##### **3. 风险预警与备选方案**
+- **预期管理**：明确告知广阳核心区无标准厂房，避免客户幻想“市中心工业园”。
+- **竞品防御**：警惕共享工位+展示窗模式分流，可强调“独立门面=品牌信任感”。
+- **紧急动作**：立即盘点解放道沿线汽配城、旧仓库改造资源，优先推荐“前店后仓”结构。
+
+---
+
+> ✅ **执行要点**：不再推送标准厂房，转而以**高可见度临街载体**为核心卖点，用“客流转化率”替代“面积/产权”作为决策锚点。`;
+
+const propertyMatchMarkdown = `根据您的需求，为您输出如下方案：
+
+### 选址方案1
+![选址方案1-地铁站旁可研发办公](https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1200&q=80)
+**地铁站旁可研发办公**  
+多层 · 层高3.5米  
+\`花园式\` \`近地铁\` \`可办公\`  
+**1.5-1.8 元/㎡/天** · 2000㎡
+
+- **推荐理由**：该载体为丙二类消防，满足生物制剂生产合规门槛。单层2000㎡、层高3.5米，利于生产动线规划；500kg/㎡承重可覆盖常规设备布置。临近地铁且园区食堂、停车配套完善，便于研发与运营协同。
+
+---
+
+### 选址方案2
+![选址方案2-地铁口可研发办公](https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1200&q=80)
+**地铁口，可研发办公**  
+多层 · 层高3.5米  
+\`近地铁\` \`可办公\` \`有产权\`  
+**1.5 元/㎡/天** · 2000㎡
+
+- **推荐理由**：该载体具备丙二类消防资质，2000㎡单层空间结合3.5米层高，适合研发及生产分区。租金稳定且园区配套成熟，整体运营成本更可控，适合稳步扩张型团队。
+
+---
+
+### 选址方案3
+![选址方案3-亦庄东区精装厂房地铁旁](https://images.unsplash.com/photo-1581092446327-9f89b7fc4f3f?auto=format&fit=crop&w=1200&q=80)
+**亦庄东区精装厂房地铁旁**  
+多层 · 层高8米  
+\`近地铁\` \`单层厂房\` \`可分割\`  
+**1.6-2.6 元/㎡/天** · 2000㎡
+
+- **推荐理由**：8米层高与单层2000㎡组合适配大型设备与洁净风管安装需求，改造潜力大。该载体支持分割，利于“生产+仓储+办公”分区管理；如项目后续扩产，空间弹性更好。
+
+---
+
+### 选址方案4（不推荐）
+![选址方案4-低价小面积载体](https://images.unsplash.com/photo-1568992688065-536aad8a12f6?auto=format&fit=crop&w=1200&q=80)
+**测试载体（面积过小）**  
+固安县 · 层高1.0米  
+\`低价\` \`非生产级\`  
+**0.01-0.2 元/㎡/天** · 1㎡
+
+- **推荐理由**：该载体面积与层高远低于生产需求，仅可作为对照样本，不建议进入候选清单。
+
+---
+
+### 综合分析
+建议优先安排方案1和方案2现场踏勘（位置与成本平衡最佳），方案3作为扩产备选。若您确认意向区域与面积区间，我可以继续输出带地图与通勤半径的下一版清单。`;
+
+const buildProjectDetailMarkdown = (projectName: string, projectCode: string) => `好的，我已准确理解您要查询项目编号为 ${projectCode} 的${projectName}项目详情。作为您的金牌经纪人，我会立即为您调取该项目的完整信息，包括客户、阶段、面积等关键数据，马上开始执行。  
+好的，这是您负责的项目 **${projectCode}** 的完整详情整理：
+
+---
+
+### 📌 项目基本信息
+
+- **项目名称**：${projectName}  
+- **项目编号**：${projectCode}  
+- **项目阶段**：未推进  
+- **项目等级**：B级  
+- **创建时间**：2025-06-27 16:49:23  
+- **最近跟进时间**：2025-07-16 19:08:00
+
+---
+
+### 👤 客户信息
+
+- **客户姓名**：钟先生  
+- **联系电话**：136****7208（已脱敏）  
+- **公司名称**：未填写  
+- **微信信息**：未提供
+
+> 💡 **客户核心需求备注**：  
+> - 当前在马桥，计划搬迁至春申区域；  
+> - 目标选址：**莘庄附近约600㎡的一楼仓储**；  
+> - **必须能进9.6米大货车**；  
+> - 预算较低（曾提出一楼0.7元/㎡/天，带看时报价0.8元）；  
+> - 业务类型：做“多多买菜”（也有记录提及“叮咚买菜”，需确认是否为同一主体或切换平台）。
+
+---
+
+### 📝 关键跟进记录（按时间倒序）
+
+| 日期 | 动作 | 内容摘要 |
+|------|------|--------|
+| **2025-07-16** | 跟进 | 客户电话/微信长期不回复。 |
+| **2025-07-16** | 跟进 | 客户此前被中介成交过，但因面积不符退租，中介承诺找到新房后才退佣金。 |
+| **2025-06-28** | 带看 | 带看申港路518号房源：<br>• 客户日均10-20辆车进出；<br>• 预算偏低（0.8元/㎡）；<br>• 房东因车辆太多拒绝出租。 |
+| **2025-06-27** | 跟进 | 约定次日看房，客户做多多买菜，预算一楼0.7元，经纪人表示可后续谈价。 |
+
+---
+
+### 📍 意向区域与载体要求
+
+- **意向区域**：上海市闵行区（明确聚焦 **莘庄/春申** 片区）  
+- **面积需求**：约600㎡（系统记录范围：500~1000㎡）  
+- **载体类型**：仓库  
+- **特殊要求**：  
+  - 必须为**一楼**；  
+  - **可通行9.6米货车**；  
+  - 对价格敏感，预算偏低。
+
+---
+
+### ⚠️ 风险与机会点
+
+- **风险**：  
+  - 客户响应率低，沟通困难；  
+  - 曾有被其他中介“截胡”经历，信任度需重建；  
+  - 预算与市场行情可能存在较大差距。
+  
+- **机会**：  
+  - 客户确有真实搬迁和扩仓需求；  
+  - 若能找到符合动线、承重、货车进出条件且价格适配的房源，仍有成交可能。
+
+---
+
+如需我为您：
+- ✅ 制定下一步拜访/沟通策略  
+- ✅ 匹配莘庄区域符合条件的仓库载体  
+- ✅ 生成客户破冰话术或价格谈判方案
+
+请随时告诉我！`;
 
 // --- Components ---
 
@@ -54,6 +306,114 @@ const ActionCard = ({ icon: Icon, label, onClick }: { icon: any, label: string, 
     </div>
     <span className="text-[14px] font-medium text-slate-600">{label}</span>
   </button>
+);
+
+type PropertyMatchOption = {
+  id: number;
+  title: string;
+  image: string;
+  subtitle: string;
+  tags: string[];
+  price: string;
+  area: string;
+  reason: string;
+};
+
+const propertyMatchOptions: PropertyMatchOption[] = [
+  {
+    id: 1,
+    title: '地铁站旁可研发办公',
+    image: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1200&q=80',
+    subtitle: '多层·层高3.5米',
+    tags: ['花园式', '近地铁', '可办公'],
+    price: '1.5-1.8 元/㎡/天',
+    area: '2000㎡',
+    reason: '该载体为丙二类消防，满足生物制剂生产合规门槛。单层2000㎡、层高3.5米，利于生产动线规划；500kg/㎡承重可覆盖常规设备布置。临近地铁且园区食堂、停车配套完善，便于研发与运营协同。',
+  },
+  {
+    id: 2,
+    title: '地铁口，可研发办公',
+    image: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1200&q=80',
+    subtitle: '多层·层高3.5米',
+    tags: ['近地铁', '可办公', '有产权'],
+    price: '1.5 元/㎡/天',
+    area: '2000㎡',
+    reason: '该载体具备丙二类消防资质，2000㎡单层空间结合3.5米层高，适合研发及生产分区。租金稳定且园区配套成熟，整体运营成本更可控，适合稳步扩张型团队。',
+  },
+  {
+    id: 3,
+    title: '亦庄东区精装厂房地铁旁',
+    image: 'https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?auto=format&fit=crop&w=1200&q=80',
+    subtitle: '多层·层高8米',
+    tags: ['近地铁', '单层厂房', '可分割'],
+    price: '1.6-2.6 元/㎡/天',
+    area: '2000㎡',
+    reason: '8米层高与单层2000㎡组合适配大型设备与洁净风管安装需求，改造潜力大。该载体支持分割，利于“生产+仓储+办公”分区管理；如项目后续扩产，空间弹性更好。',
+  },
+  {
+    id: 4,
+    title: '测试载体（面积过小）',
+    image: 'https://images.unsplash.com/photo-1568992688065-536aad8a12f6?auto=format&fit=crop&w=1200&q=80',
+    subtitle: '固安县·层高1.0米',
+    tags: ['低价', '非生产级'],
+    price: '0.01-0.2 元/㎡/天',
+    area: '1㎡',
+    reason: '该载体面积与层高远低于生产需求，仅可作为对照样本，不建议进入候选清单。',
+  },
+];
+
+const PropertyMatchLayout = () => (
+  <div className="space-y-4">
+    <p className="font-semibold text-slate-800 text-[17px]">根据您的需求，为您输出如下方案：</p>
+    {propertyMatchOptions.map((item) => (
+      <div key={item.id} className="space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-sm bg-orange-500 px-1 text-[11px] font-bold text-white">
+            {item.id}
+          </span>
+          <h4 className="text-[16px] font-bold text-slate-800">选址方案{item.id}：</h4>
+        </div>
+        <div className="rounded-2xl bg-white/60 p-2">
+          <div className="flex gap-2.5">
+            <img
+              src={item.image}
+              alt={item.title}
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = heroImage;
+              }}
+              className="h-28 w-28 rounded-xl object-cover shrink-0 border border-slate-200"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="text-[15px] font-bold text-slate-800 leading-snug line-clamp-2">{item.title}</p>
+              <p className="mt-0.5 text-slate-500 text-[13px]">{item.subtitle}</p>
+              <div className="mt-1 flex flex-nowrap gap-1 overflow-hidden whitespace-nowrap">
+                {item.tags.map((tag) => (
+                  <span key={tag} className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[11px] text-slate-500 shrink-0">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              <p className="mt-1.5 leading-none">
+                <span className="text-[16px] font-bold text-red-500">{item.price}</span>
+                <span className="ml-1.5 text-slate-400 text-[12px]">{item.area}</span>
+              </p>
+            </div>
+          </div>
+        </div>
+        <p className="text-slate-700 leading-relaxed text-[13px]">
+          <span className="mr-2 inline-block h-2.5 w-2.5 rounded-full bg-orange-500 align-middle" />
+          <span className="font-bold text-slate-800">推荐理由：</span> {item.reason}
+        </p>
+      </div>
+    ))}
+    <div className="pt-1">
+      <h4 className="text-[16px] font-bold text-slate-800">综合分析</h4>
+      <p className="mt-1.5 text-[13px] text-slate-700 leading-relaxed">
+        综合匹配结果建议优先安排方案1和方案2现场踏勘（位置与成本平衡更优），方案3作为扩产备选，方案4不建议进入候选清单。
+        如您确认意向区域与面积区间，我可继续输出带通勤半径与载体对比的下一版清单。
+      </p>
+    </div>
+  </div>
 );
 
 const GTVBindingCard = ({ onBind, isBound }: { onBind: () => void, isBound?: boolean }) => (
@@ -199,23 +559,34 @@ export default function App() {
   const [isBindingDemo, setIsBindingDemo] = useState(false);
   const [isScenarioPickerOpen, setIsScenarioPickerOpen] = useState(false);
   const [recordingScenario, setRecordingScenario] = useState<RecordingScenario>('all_connected');
+  const [isPropertyMatchingScene, setIsPropertyMatchingScene] = useState(false);
+  const [messageFeedback, setMessageFeedback] = useState<Record<number, 'up' | 'down' | undefined>>({});
   const [sessions, setSessions] = useState<{id: string, title: string, date: string, messages: ChatMessage[]}[]>([
     {
-      id: '1',
-      title: '关于芯动科技的拜访计划',
-      date: '2024-02-27',
+      id: 'visit-plan',
+      title: '拜访计划',
+      date: '2026-03-06',
       messages: [
-        { role: 'user', content: '帮我制定一个拜访芯动科技的计划' },
-        { role: 'assistant', content: '好的，根据芯动科技的情况，我建议...' }
+        { role: 'user', content: '帮我制定拜访计划' },
+        { role: 'assistant', content: visitPlanMarkdown }
       ]
     },
     {
-      id: '2',
-      title: '房源匹配咨询',
-      date: '2024-02-26',
+      id: 'follow-up-strategy',
+      title: '跟进策略',
+      date: '2026-03-06',
       messages: [
-        { role: 'user', content: '新余高新区有合适的厂房吗？' },
-        { role: 'assistant', content: '有的，目前有以下几个推荐...' }
+        { role: 'user', content: '帮我生成跟进策略' },
+        { role: 'assistant', content: followUpStrategyMarkdown }
+      ]
+    },
+    {
+      id: 'property-match',
+      title: '房源匹配',
+      date: '2026-03-06',
+      messages: [
+        { role: 'user', content: '帮我进行房源匹配' },
+        { role: 'assistant', content: propertyMatchMarkdown }
       ]
     }
   ]);
@@ -326,6 +697,16 @@ export default function App() {
     return overdueDays > 0 ? overdueDays : 0;
   };
 
+  const getProjectLevel = (project: Project): 'A级' | 'B级' | 'C级' | 'D级' => {
+    const stage = project.stage || '';
+    if (stage.includes('签约') || stage.includes('回款完成')) return 'A级';
+    if (stage.includes('回款中') || stage.includes('夯实')) return 'B级';
+    if (stage.includes('带看') || stage.includes('房源匹配')) return 'C级';
+    return 'D级';
+  };
+
+  const getDisplayProjectName = (name: string) => name.replace(/^【[^】]+】\s*/, '');
+
   const handleSend = async (customInput?: string) => {
     const text = customInput || input;
     if (!text.trim() || !user) return;
@@ -356,6 +737,51 @@ export default function App() {
         
         const content = await getChatResponse([...messages, userMsg], true, drillProjectInfo);
         setMessages(prev => [...prev, { role: 'assistant', content: content || "抱歉，我暂时无法回应。", type: 'drill' }]);
+        setLoading(false);
+        return;
+      }
+
+      if (text === '帮我制定拜访计划') {
+        setIsPropertyMatchingScene(false);
+        setMessages(prev => [...prev, { role: 'assistant', content: visitPlanMarkdown }]);
+        setLoading(false);
+        return;
+      }
+
+      if (text === '帮我生成跟进策略') {
+        setIsPropertyMatchingScene(false);
+        setMessages(prev => [...prev, { role: 'assistant', content: followUpStrategyMarkdown }]);
+        setLoading(false);
+        return;
+      }
+
+      if (text === '帮我进行房源匹配') {
+        setIsPropertyMatchingScene(true);
+        setMessages(prev => [...prev, { role: 'assistant', content: propertyMatchMarkdown }]);
+        setLoading(false);
+        return;
+      }
+
+      if (isPropertyMatchingScene) {
+        setMessages(prev => [...prev, { role: 'assistant', content: propertyMatchMarkdown }]);
+        setLoading(false);
+        return;
+      }
+
+      const projectDetailMatch = text.match(/^帮我查下“(.+?)”[（(](XM\d+)[）)]的项目详情$/);
+      if (projectDetailMatch) {
+        const [, projectName, projectCode] = projectDetailMatch;
+        const assistantContent = buildProjectDetailMarkdown(projectName, projectCode);
+        const assistantMsg: ChatMessage = { role: 'assistant', content: assistantContent };
+        setMessages(prev => [...prev, assistantMsg]);
+        setSessions([
+          {
+            id: `${Date.now()}`,
+            title: `项目详情：${projectName}`,
+            date: new Date().toISOString().slice(0, 10),
+            messages: [userMsg, assistantMsg],
+          }
+        ]);
         setLoading(false);
         return;
       }
@@ -474,7 +900,7 @@ export default function App() {
         setIsDrilling(true);
         setMessages(prev => [...prev, { role: 'assistant', content: '好的，演练开始！我是某电子制造企业的采购经理，我们最近在寻找5000平的厂房。请问你们园区的供电和防静电措施怎么样？', type: 'drill' }]);
       } else {
-        setMessages(prev => [...prev, { role: 'assistant', content: '抱歉，我还没完全理解你的意思。你可以试着说“分析我的新项目”或者“开始演练”。' }]);
+        setMessages(prev => [...prev, { role: 'assistant', content: '抱歉，我还没完全理解你的意思。你可以试着说“分析我的新项目”或者“帮我制定拜访计划”。' }]);
       }
     } catch (error) {
       console.error(error);
@@ -554,6 +980,77 @@ export default function App() {
     setIsBindingError(true);
   };
 
+  const handleCopyMessage = async (content: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setToast('已复制');
+      setTimeout(() => setToast(null), 1500);
+    } catch {
+      setToast('复制失败');
+      setTimeout(() => setToast(null), 1500);
+    }
+  };
+
+  const handleShareMessage = async (content: string) => {
+    try {
+      if (navigator.share) {
+        await navigator.share({ text: content });
+      } else {
+        await navigator.clipboard.writeText(content);
+        setToast('已复制内容，可直接分享');
+        setTimeout(() => setToast(null), 1500);
+      }
+    } catch {
+      // user cancelled share panel; no toast needed
+    }
+  };
+
+  const handleFeedback = (index: number, type: 'up' | 'down') => {
+    setMessageFeedback(prev => ({
+      ...prev,
+      [index]: prev[index] === type ? undefined : type,
+    }));
+  };
+
+  const getSceneGuideButtons = (content: string): { label: string; prompt: string; type?: 'send' | 'upload' }[] => {
+    const isProjectListScene = content.includes('找到以下相关项目信息') || content.includes('**项目名称**');
+    const isProjectDetailScene = content.includes('### 📌 项目基本信息') || (content.includes('项目编号') && content.includes('客户信息'));
+    const isVisitPlanScene = content.includes('明日拜访路线图') || content.includes('项目拜访计划');
+    const isFollowUpStrategyScene = content.includes('倪总项目经营策略') || content.includes('精准跟进策略');
+
+    if (isProjectListScene) {
+      return [
+        { label: '拜访计划', prompt: '帮我制定拜访计划' },
+        { label: '跟进策略', prompt: '帮我生成跟进策略' },
+        { label: '房源匹配', prompt: '帮我进行房源匹配' },
+      ];
+    }
+
+    if (isProjectDetailScene) {
+      return [
+        { label: '跟进策略', prompt: '帮我生成跟进策略' },
+        { label: '房源匹配', prompt: '帮我进行房源匹配' },
+      ];
+    }
+
+    if (isVisitPlanScene) {
+      return [
+        { label: '跟进策略', prompt: '帮我生成跟进策略' },
+        { label: '房源匹配', prompt: '帮我进行房源匹配' },
+      ];
+    }
+
+    if (isFollowUpStrategyScene) {
+      return [
+        { label: '房源匹配', prompt: '帮我进行房源匹配' },
+        { label: '开启AI录音', prompt: '开启AI录音' },
+        { label: '上传录音', prompt: '上传录音', type: 'upload' },
+      ];
+    }
+
+    return [];
+  };
+
   return (
     <div className="flex h-screen bg-[#FAFAFA] overflow-hidden font-sans">
       <AnimatePresence>
@@ -628,7 +1125,7 @@ export default function App() {
                   >
                     <div className="flex-1 min-w-0 mr-3 text-left">
                       <div className="flex items-center gap-2">
-                        <p className="font-bold text-slate-800 text-sm truncate">{p.name}</p>
+                        <p className="font-bold text-slate-800 text-sm truncate">{getDisplayProjectName(p.name)}</p>
                         {isCurrentRecording && (
                           <span className="flex items-center gap-1 px-1.5 py-0.5 bg-indigo-600 text-[9px] text-white rounded-md animate-pulse">
                             <div className="w-1 h-1 bg-white rounded-full" />
@@ -637,7 +1134,7 @@ export default function App() {
                         )}
                       </div>
                       <p className="text-[11px] text-slate-400 mt-0.5">
-                        XM211023{p.id.toString().padStart(4, '0')} · {p.client_name} · {p.stage}
+                        XM211023{p.id.toString().padStart(4, '0')} · {p.stage} · {p.client_name}
                       </p>
                     </div>
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
@@ -988,6 +1485,7 @@ export default function App() {
               setMessages([]);
               setIsDrilling(false);
               setCurrentDrillProject(null);
+              setIsPropertyMatchingScene(false);
             }} 
             className={`p-2 -ml-2 text-slate-600 transition-opacity ${messages.length <= 0 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
           >
@@ -995,7 +1493,7 @@ export default function App() {
           </button>
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center overflow-hidden border border-slate-100 shadow-sm">
-              <img src="https://picsum.photos/seed/landscape/200/200" alt="Avatar" className="w-full h-full object-cover" />
+              <img src={heroImage} alt="Avatar" className="w-full h-full object-cover" />
             </div>
             <div className="font-bold text-slate-800 text-sm flex items-center gap-1">
               AI金牌经纪人
@@ -1039,12 +1537,12 @@ export default function App() {
                     referrerPolicy="no-referrer"
                   />
                 </div>
-                <div className="relative bg-white/96 backdrop-blur rounded-[28px] p-4 shadow-sm border border-slate-100 z-30">
+                <div className="relative bg-white/96 backdrop-blur rounded-[28px] px-4 py-2 shadow-sm border border-slate-100 z-30">
                   <div className="grid grid-cols-4 gap-1">
-                    <ActionCard icon={FileText} label="制定拜访计划" onClick={() => handleSend('制定拜访计划')} />
-                    <ActionCard icon={TrendingUp} label="生成跟进策略" onClick={() => handleSend('生成跟进策略')} />
-                    <ActionCard icon={LayoutGrid} label="匹配房源" onClick={() => handleSend('匹配房源')} />
-                    <ActionCard icon={History} label="今日复盘" onClick={() => handleSend('今日复盘')} />
+                    <ActionCard icon={FileText} label="拜访计划" onClick={() => handleSend('帮我制定拜访计划')} />
+                    <ActionCard icon={TrendingUp} label="跟进策略" onClick={() => handleSend('帮我生成跟进策略')} />
+                    <ActionCard icon={LayoutGrid} label="房源匹配" onClick={() => handleSend('帮我进行房源匹配')} />
+                    <ActionCard icon={History} label="今日复盘" onClick={() => handleSend('今日跟进复盘')} />
                   </div>
                 </div>
               </div>
@@ -1065,21 +1563,24 @@ export default function App() {
                   {homeFollowUpProjects.length > 0 ? (
                     homeFollowUpProjects.map((project) => {
                       const pendingDays = getPendingDays(project.id);
+                      const projectLevel = getProjectLevel(project);
+                      const displayProjectName = getDisplayProjectName(project.name);
                       return (
                         <button
                           key={project.id}
                           onClick={() =>
                             handleSend(
-                              `帮我制定“${project.name}”（XM211023${project.id.toString().padStart(4, '0')}）的项目跟进策略`
+                              `帮我查下“${displayProjectName}”（XM211023${project.id.toString().padStart(4, '0')}）的项目详情`
                             )
                           }
-                          className="w-full text-left pb-3 border-b border-slate-100 last:border-b-0 last:pb-0 hover:bg-slate-50/40 rounded-md transition-colors"
+                          className="w-full text-left pb-3 border-b border-slate-200 last:border-b-0 last:pb-0 hover:bg-slate-50/40 rounded-md transition-colors"
                         >
-                          <p className="text-slate-800 text-[14px] font-medium truncate">{project.name}</p>
-                          <div className="mt-2 flex items-center gap-6 text-slate-400 text-sm">
-                            <span>{project.client_name || '未命名客户'}</span>
-                            <span>{project.stage || '待跟进'}</span>
-                            <span>{pendingDays > 0 ? `${pendingDays}天未跟进` : '10天未跟进'}</span>
+                          <p className="text-slate-800 text-[14px] font-medium overflow-hidden whitespace-nowrap text-ellipsis">{displayProjectName}</p>
+                          <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1 text-slate-400 text-[12px]">
+                            <span className="truncate">{projectLevel}</span>
+                            <span className="truncate">{project.stage || '待跟进'}</span>
+                            <span className="truncate">{project.client_name || '未命名'}</span>
+                            <span className="truncate">{pendingDays > 0 ? `${pendingDays}天未跟进` : '10天未跟进'}</span>
                           </div>
                         </button>
                       );
@@ -1090,24 +1591,9 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Expand Conversation */}
-              <div className="flex justify-center py-2">
-                <button 
-                  onClick={() => {
-                    if (sessions.length > 0) {
-                      setMessages(sessions[0].messages);
-                    } else {
-                      setIsKeyboardMode(true);
-                    }
-                  }}
-                  className="text-xs text-slate-400 flex items-center gap-1 hover:text-indigo-600 transition-colors"
-                >
-                  展开对话 <ChevronDown size={14} />
-                </button>
-              </div>
             </div>
           ) : (
-            <div className="flex-1 flex flex-col p-4 lg:p-6 overflow-hidden">
+            <div className="flex-1 flex flex-col px-4 pt-4 pb-1 lg:px-6 lg:pt-6 lg:pb-2 overflow-hidden">
               {/* Messages */}
               <div className="flex-1 overflow-y-auto space-y-4 lg:space-y-6 pr-1 lg:pr-4 custom-scrollbar">
                 <AnimatePresence initial={false}>
@@ -1131,9 +1617,11 @@ export default function App() {
                       }`}>
                         {msg.type === 'transcription' ? (
                           <TranscriptionCard />
+                        ) : msg.role === 'assistant' && msg.content === propertyMatchMarkdown ? (
+                          <PropertyMatchLayout />
                         ) : (
                           <div className="markdown-body prose prose-sm max-w-none leading-relaxed">
-                            <Markdown>{msg.content}</Markdown>
+                            <Markdown remarkPlugins={[remarkGfm]}>{msg.content}</Markdown>
                           </div>
                         )}
                         {msg.type === 'gtv_binding' && (
@@ -1170,6 +1658,65 @@ export default function App() {
                             </div>
                           </div>
                         )}
+                        {msg.role === 'assistant' && msg.type !== 'transcription' && (() => {
+                          const guideButtons = getSceneGuideButtons(msg.content);
+                          if (guideButtons.length === 0) return null;
+                          return (
+                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                              {guideButtons.map((btn) => (
+                                <button
+                                  key={btn.label}
+                                  onClick={() => {
+                                    if (btn.type === 'upload') {
+                                      fileInputRef.current?.click();
+                                      return;
+                                    }
+                                    handleSend(btn.prompt);
+                                  }}
+                                  className="px-3 py-1.5 rounded-full border border-slate-300 text-slate-700 text-xs font-medium hover:bg-slate-50 active:scale-95 transition-all"
+                                >
+                                  {btn.label}
+                                </button>
+                              ))}
+                            </div>
+                          );
+                        })()}
+                        {msg.role === 'assistant' && msg.type !== 'transcription' && (
+                          <div className="mt-3 flex items-center gap-2">
+                            <button
+                              onClick={() => handleCopyMessage(msg.content)}
+                              className="h-8 w-8 text-slate-500 hover:text-slate-700 transition-colors inline-flex items-center justify-center"
+                            >
+                              <Copy size={14} />
+                            </button>
+                            <button
+                              onClick={() => handleFeedback(i, 'up')}
+                              className={`h-8 w-8 transition-colors inline-flex items-center justify-center ${
+                                messageFeedback[i] === 'up'
+                                  ? 'text-emerald-600'
+                                  : 'text-slate-500 hover:text-slate-700'
+                              }`}
+                            >
+                              <ThumbsUp size={14} />
+                            </button>
+                            <button
+                              onClick={() => handleFeedback(i, 'down')}
+                              className={`h-8 w-8 transition-colors inline-flex items-center justify-center ${
+                                messageFeedback[i] === 'down'
+                                  ? 'text-rose-600'
+                                  : 'text-slate-500 hover:text-slate-700'
+                              }`}
+                            >
+                              <ThumbsDown size={14} />
+                            </button>
+                            <button
+                              onClick={() => handleShareMessage(msg.content)}
+                              className="h-8 w-8 text-slate-500 hover:text-slate-700 transition-colors inline-flex items-center justify-center"
+                            >
+                              <Share2 size={14} />
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </motion.div>
                   ))}
@@ -1191,7 +1738,7 @@ export default function App() {
           )}
 
           {/* Input Area */}
-          <div className="p-4">
+          <div className="px-4 pt-1 pb-4">
             {/* Bottom Quick Actions */}
             <div className="flex gap-2 mb-3">
               <button
