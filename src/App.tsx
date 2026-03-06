@@ -1040,10 +1040,11 @@ export default function App() {
                   />
                 </div>
                 <div className="relative bg-white/96 backdrop-blur rounded-[28px] p-4 shadow-sm border border-slate-100 z-30">
-                  <div className="grid grid-cols-3 gap-1">
+                  <div className="grid grid-cols-4 gap-1">
                     <ActionCard icon={FileText} label="制定拜访计划" onClick={() => handleSend('制定拜访计划')} />
                     <ActionCard icon={TrendingUp} label="生成跟进策略" onClick={() => handleSend('生成跟进策略')} />
                     <ActionCard icon={LayoutGrid} label="匹配房源" onClick={() => handleSend('匹配房源')} />
+                    <ActionCard icon={History} label="今日复盘" onClick={() => handleSend('今日复盘')} />
                   </div>
                 </div>
               </div>
