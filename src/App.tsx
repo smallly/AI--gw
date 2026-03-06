@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -47,12 +47,12 @@ const heroImage = new URL('../images/IP.png', import.meta.url).href;
 const ActionCard = ({ icon: Icon, label, onClick }: { icon: any, label: string, onClick: () => void }) => (
   <button 
     onClick={onClick}
-    className="flex flex-col items-center gap-1.5 p-1 transition-all active:scale-95"
+    className="flex flex-col items-center gap-2 p-2 transition-all active:scale-95"
   >
-    <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-500">
-      <Icon size={20} />
+    <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-500">
+      <Icon size={24} />
     </div>
-    <span className="text-[11px] font-medium text-slate-600">{label}</span>
+    <span className="text-[14px] font-medium text-slate-600">{label}</span>
   </button>
 );
 
@@ -299,6 +299,31 @@ export default function App() {
     setProjectSearch('');
     setVisibleProjectCount(10);
     setIsProjectSelectionView(true);
+  };
+
+  const pendingProjectIds = new Set(
+    plans
+      .filter((plan) => plan.status === 'pending')
+      .map((plan) => plan.project_id)
+  );
+
+  const followUpProjects = projects
+    .filter((project) => pendingProjectIds.has(project.id))
+    .slice(0, 2);
+
+  const homeFollowUpProjects = followUpProjects.length > 0 ? followUpProjects : projects.slice(0, 2);
+
+  const getPendingDays = (projectId: number) => {
+    const projectPlans = plans
+      .filter((plan) => plan.project_id === projectId && plan.status === 'pending')
+      .map((plan) => new Date(plan.time).getTime())
+      .filter((time) => Number.isFinite(time))
+      .sort((a, b) => a - b);
+
+    if (projectPlans.length === 0) return 0;
+    const now = Date.now();
+    const overdueDays = Math.floor((now - projectPlans[0]) / (1000 * 60 * 60 * 24));
+    return overdueDays > 0 ? overdueDays : 0;
   };
 
   const handleSend = async (customInput?: string) => {
@@ -957,7 +982,7 @@ export default function App() {
       </AnimatePresence>
       <main className="flex-1 flex flex-col overflow-hidden relative">
         {/* Mobile Header */}
-        <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-[#FAFAFA] sticky top-0 z-30 border-b border-slate-50">
+        <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-[#FAFAFA] sticky top-0 z-30 border-b border-slate-200/70">
           <button 
             onClick={() => {
               setMessages([]);
@@ -993,36 +1018,66 @@ export default function App() {
 
         <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full overflow-hidden relative bg-[#FAFAFA]">
           {messages.length <= 0 ? (
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto px-4 pt-1 pb-4 custom-scrollbar">
               {/* Hero Section */}
-              <div className="relative pt-4 pb-2">
-                <div className="max-w-[70%]">
-                  <h2 className="text-2xl font-bold text-slate-900 leading-tight mb-3">
+              <div className="relative rounded-[30px] overflow-visible mb-5">
+                <div className="w-[56%] min-h-[155px] flex flex-col justify-center">
+                  <h2 className="text-2xl font-bold text-slate-900 leading-[1.3] mb-4">
                     AI金牌经纪人，<br />您的随身军师！
                   </h2>
-                  <div className="flex flex-wrap gap-4 text-xs text-slate-400 font-medium">
+                  <div className="flex flex-wrap gap-4 text-[14px] text-slate-500 font-medium">
                     <span className="flex items-center gap-1">
                       产业选址行业垂直大模型
                     </span>
                   </div>
                 </div>
-                {/* 3D Avatar Placeholder */}
-                <div className="absolute right-0 top-0 w-20 h-28 pointer-events-none">
-                  <img 
+                <div className="absolute right-0 top-0 w-[40%] h-[220px] pointer-events-none z-10">
+                  <img
                     src={heroImage}
-                    alt="AI Broker" 
-                    className="w-full h-full object-contain opacity-95 drop-shadow-lg"
+                    alt="AI Broker"
+                    className="w-full h-full object-contain object-top translate-y-2 drop-shadow-xl"
                     referrerPolicy="no-referrer"
                   />
                 </div>
+                <div className="relative bg-white/96 backdrop-blur rounded-[28px] p-4 shadow-sm border border-slate-100 z-30">
+                  <div className="grid grid-cols-3 gap-1">
+                    <ActionCard icon={FileText} label="制定拜访计划" onClick={() => handleSend('制定拜访计划')} />
+                    <ActionCard icon={TrendingUp} label="生成跟进策略" onClick={() => handleSend('生成跟进策略')} />
+                    <ActionCard icon={LayoutGrid} label="匹配房源" onClick={() => handleSend('匹配房源')} />
+                  </div>
+                </div>
               </div>
 
-              {/* Action Grid */}
-              <div className="bg-white rounded-3xl p-3 shadow-sm border border-white">
-                <div className="grid grid-cols-3 gap-1">
-                  <ActionCard icon={FileText} label="制定拜访计划" onClick={() => handleSend('制定拜访计划')} />
-                  <ActionCard icon={TrendingUp} label="生成跟进策略" onClick={() => handleSend('生成跟进策略')} />
-                  <ActionCard icon={LayoutGrid} label="匹配房源" onClick={() => handleSend('匹配房源')} />
+              {/* Follow-up Projects */}
+              <div className="bg-white rounded-3xl px-5 py-4 shadow-sm border border-white">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-[16px] font-[400] text-black">待跟进项目</p>
+                  <button
+                    onClick={() => handleSend('制定今日拜访计划')}
+                    className="text-slate-500 text-sm font-medium inline-flex items-center gap-1 hover:text-indigo-600 transition-colors"
+                  >
+                    查看更多 <ChevronRight size={16} />
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {homeFollowUpProjects.length > 0 ? (
+                    homeFollowUpProjects.map((project) => {
+                      const pendingDays = getPendingDays(project.id);
+                      return (
+                        <div key={project.id} className="pb-3 border-b border-slate-100 last:border-b-0 last:pb-0">
+                          <p className="text-slate-800 text-[14px] font-medium truncate">{project.name}</p>
+                          <div className="mt-2 flex items-center gap-6 text-slate-400 text-sm">
+                            <span>{project.client_name || '未命名客户'}</span>
+                            <span>{project.stage || '待跟进'}</span>
+                            <span>{pendingDays > 0 ? `${pendingDays}天未跟进` : '10天未跟进'}</span>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className="text-slate-400 text-sm py-2">暂无待跟进项目</p>
+                  )}
                 </div>
               </div>
 
@@ -1127,20 +1182,20 @@ export default function App() {
           )}
 
           {/* Input Area */}
-          <div className="p-4 bg-[#FAFAFA]">
+          <div className="p-4">
             {/* Bottom Quick Actions */}
             <div className="flex gap-2 mb-3">
               <button
                 onClick={openRecordingScenarioPicker}
                 className="bg-white px-4 py-2 rounded-full text-xs font-medium text-slate-600 shadow-sm border border-slate-100 flex items-center gap-1.5 active:scale-95 transition-all"
               >
-                <Mic size={14} className="text-indigo-500" /> 开启AI录音
+                <Mic size={14} className="text-slate-400" /> 开启AI录音
               </button>
               <button
                 onClick={() => handleSend('联系我们')}
                 className="bg-white px-4 py-2 rounded-full text-xs font-medium text-slate-600 shadow-sm border border-slate-100 flex items-center gap-1.5 active:scale-95 transition-all"
               >
-                <PhoneCall size={14} className="text-indigo-500" /> 联系我们
+                <PhoneCall size={14} className="text-slate-400" /> 联系我们
               </button>
             </div>
 
