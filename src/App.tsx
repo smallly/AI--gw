@@ -1065,14 +1065,22 @@ export default function App() {
                     homeFollowUpProjects.map((project) => {
                       const pendingDays = getPendingDays(project.id);
                       return (
-                        <div key={project.id} className="pb-3 border-b border-slate-100 last:border-b-0 last:pb-0">
+                        <button
+                          key={project.id}
+                          onClick={() =>
+                            handleSend(
+                              `帮我制定“${project.name}”（XM211023${project.id.toString().padStart(4, '0')}）的项目跟进策略`
+                            )
+                          }
+                          className="w-full text-left pb-3 border-b border-slate-100 last:border-b-0 last:pb-0 hover:bg-slate-50/40 rounded-md transition-colors"
+                        >
                           <p className="text-slate-800 text-[14px] font-medium truncate">{project.name}</p>
                           <div className="mt-2 flex items-center gap-6 text-slate-400 text-sm">
                             <span>{project.client_name || '未命名客户'}</span>
                             <span>{project.stage || '待跟进'}</span>
                             <span>{pendingDays > 0 ? `${pendingDays}天未跟进` : '10天未跟进'}</span>
                           </div>
-                        </div>
+                        </button>
                       );
                     })
                   ) : (
