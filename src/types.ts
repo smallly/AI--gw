@@ -47,6 +47,6 @@ export interface ChatMessage {
   id?: number;
   role: 'user' | 'assistant' | 'system';
   content: string;
-  type?: 'chat' | 'drill' | 'analysis' | 'gtv_binding' | 'transcription';
+  type?: 'chat' | 'drill' | 'analysis' | 'gtv_binding' | 'transcription' | 'recording_analysis';
   metadata?: any;
 }

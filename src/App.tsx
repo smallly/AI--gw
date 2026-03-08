@@ -13,7 +13,6 @@ import {
   Send, 
   Mic, 
   Plus, 
-  ChevronRight,
   BrainCircuit,
   Dumbbell,
   FileText,
@@ -460,6 +459,62 @@ const TranscriptionCard = () => (
   </div>
 );
 
+const RecordingAnalysisCard = ({ metadata }: { metadata: any }) => {
+  const sourceLabel = metadata?.source === 'upload' ? '本地录音分析' : 'A1录音分析';
+  const analysisTime = metadata?.analysisTime || '2025-09-15 14:22:53';
+  const projectName = metadata?.projectName || '未关联项目';
+  const hasLinkedProject = !!projectName && !projectName.includes('未关联');
+  const projectCode = `（${metadata?.projectCode || 'XM2505282241'}）`;
+  const context = metadata?.context || '暂无沟通背景';
+  const feedback = metadata?.feedback || '暂无客户反馈';
+  const decision = metadata?.decision || '待定';
+  const nextPlan = metadata?.nextPlan || '暂无下步计划';
+  const resultItems = [
+    { label: '沟通背景', value: context },
+    { label: '客户反馈', value: feedback },
+    { label: '结果判定', value: decision },
+    { label: '下步计划', value: nextPlan },
+  ];
+
+  return (
+    <div className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-sky-50 p-4 shadow-sm">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <div className="h-9 w-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-sm">
+            <BrainCircuit size={18} />
+          </div>
+          <div>
+            <p className="text-[14px] font-semibold text-slate-800">AI录音分析结果</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">{analysisTime}</p>
+          </div>
+        </div>
+        {hasLinkedProject ? (
+          <span className="px-2 py-1 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
+            已生成跟进记录
+          </span>
+        ) : null}
+      </div>
+
+      <div className="mt-3 rounded-xl bg-white/85 border border-slate-100 p-3">
+        <p className="text-[13px] text-slate-500 mb-1">关联项目</p>
+        <p className="text-[14px] font-semibold text-slate-800 leading-snug">{projectName}{projectCode}</p>
+      </div>
+
+      <div className="mt-3 rounded-xl bg-white/85 border border-slate-100 p-3">
+        <p className="text-[13px] text-slate-500 mb-1">分析结果</p>
+        <ul className="list-disc pl-5 space-y-2 text-[14px] text-slate-700 leading-relaxed">
+          {resultItems.map((item) => (
+            <li key={item.label}>
+              <span className="font-semibold text-slate-900">{item.label}：</span>
+              <span>{item.value}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+};
+
 const HistorySidebar = ({ 
   isOpen, 
   onClose, 
@@ -680,9 +735,9 @@ export default function App() {
 
   const followUpProjects = projects
     .filter((project) => pendingProjectIds.has(project.id))
-    .slice(0, 2);
+    .slice(0, 5);
 
-  const homeFollowUpProjects = followUpProjects.length > 0 ? followUpProjects : projects.slice(0, 2);
+  const homeFollowUpProjects = followUpProjects.length > 0 ? followUpProjects : projects.slice(0, 5);
 
   const getPendingDays = (projectId: number) => {
     const projectPlans = plans
@@ -914,15 +969,38 @@ export default function App() {
     const file = event.target.files?.[0];
     if (file) {
       setToast(`已选择文件: ${file.name}，正在上传并分析...`);
-      
-      // Simulate analysis delay
+      const transcriptionMsgId = Date.now();
+      setMessages(prev => [...prev, {
+        id: transcriptionMsgId,
+        role: 'assistant',
+        content: '',
+        type: 'transcription'
+      }]);
+
       setTimeout(() => {
-        setMessages(prev => [...prev, { 
-          role: 'assistant', 
-          content: `文件 **${file.name}** 已上传成功并完成初步分析。\n\n**分析结论**: 该文件包含项目相关的关键信息。建议将其关联至对应项目以获取更深入的 AI 洞察。` 
-        }]);
+        const metadata = {
+          source: 'upload',
+          projectName: '未关联项目（建议手动选择）',
+          projectCode: '未关联编号',
+          context: `已上传本地录音“${file.name}”，系统已完成转写并提取关键信息。`,
+          feedback: '客户对载体条件有明确偏好，同时对交付风险与预算边界较敏感。',
+          decision: '待定',
+          nextPlan: '按优先级筛选2-3个匹配载体，补充关键参数对比后安排回访确认。',
+          archiveNote: '✅ 归档成功，该录音分析已写入跟进历史，可继续补充沟通内容。'
+        };
+        setMessages(prev => prev.map(m =>
+          m.id === transcriptionMsgId
+            ? {
+                ...m,
+                type: 'recording_analysis',
+                content: `录音分析完成\n\n沟通背景：${metadata.context}\n客户反馈：${metadata.feedback}\n结果判定：${metadata.decision}\n下步计划：${metadata.nextPlan}\n${metadata.archiveNote}`,
+                metadata
+              }
+            : m
+        ));
       }, 2000);
     }
+    event.target.value = '';
   };
 
   const handleBindGTV = async () => {
@@ -1018,16 +1096,16 @@ export default function App() {
     const isVisitPlanScene = content.includes('明日拜访路线图') || content.includes('项目拜访计划');
     const isFollowUpStrategyScene = content.includes('倪总项目经营策略') || content.includes('精准跟进策略');
 
-    if (isProjectListScene) {
+    if (isProjectDetailScene) {
       return [
-        { label: '拜访计划', prompt: '帮我制定拜访计划' },
         { label: '跟进策略', prompt: '帮我生成跟进策略' },
         { label: '房源匹配', prompt: '帮我进行房源匹配' },
       ];
     }
 
-    if (isProjectDetailScene) {
+    if (isProjectListScene) {
       return [
+        { label: '拜访计划', prompt: '帮我制定拜访计划' },
         { label: '跟进策略', prompt: '帮我生成跟进策略' },
         { label: '房源匹配', prompt: '帮我进行房源匹配' },
       ];
@@ -1044,7 +1122,7 @@ export default function App() {
       return [
         { label: '房源匹配', prompt: '帮我进行房源匹配' },
         { label: '开启AI录音', prompt: '开启AI录音' },
-        { label: '上传录音', prompt: '上传录音', type: 'upload' },
+        { label: '上传跟进录音', prompt: '上传录音', type: 'upload' },
       ];
     }
 
@@ -1113,7 +1191,9 @@ export default function App() {
                         setIsProjectSelectionView(false);
                         setProjectSearch('');
                         setVisibleProjectCount(10);
-                        setIsRecordingActive(true);
+                        setIsRecordingActive(false);
+                        setIsRecordingPaused(false);
+                        setRecordingTime(0);
                         setIsRecordingView(true);
                       }
                     }}
@@ -1256,14 +1336,16 @@ export default function App() {
               <button onClick={() => setIsRecordingView(false)} className="p-2 text-slate-600">
                 <ChevronLeft size={24} />
               </button>
-              <h2 className="font-bold text-slate-800">{isRecordingPaused ? '录音已暂停' : 'AI 录音中'}</h2>
+              <h2 className="font-bold text-slate-800">
+                {!isRecordingActive ? 'AI 录音准备' : isRecordingPaused ? '录音已暂停' : 'AI 录音中'}
+              </h2>
               <div className="w-10" />
             </header>
 
             <div className="flex-1 flex flex-col items-center justify-center p-8">
               <div className="relative mb-12">
                 {/* Animated Waves */}
-                {!isRecordingPaused && [1, 2, 3].map((i) => (
+                {isRecordingActive && !isRecordingPaused && [1, 2, 3].map((i) => (
                   <motion.div
                     key={i}
                     animate={{
@@ -1278,7 +1360,7 @@ export default function App() {
                     className="absolute inset-0 bg-indigo-100 rounded-full"
                   />
                 ))}
-                <div className={`relative w-32 h-32 ${isRecordingPaused ? 'bg-slate-400' : 'bg-indigo-600'} rounded-full flex items-center justify-center shadow-xl shadow-indigo-200 transition-colors`}>
+                <div className={`relative w-32 h-32 ${!isRecordingActive ? 'bg-slate-300' : isRecordingPaused ? 'bg-slate-400' : 'bg-indigo-600'} rounded-full flex items-center justify-center shadow-xl shadow-indigo-200 transition-colors`}>
                   <Mic size={48} className="text-white" />
                 </div>
               </div>
@@ -1286,55 +1368,89 @@ export default function App() {
               <div className="text-4xl font-mono font-bold text-slate-800 mb-4">
                 {formatTime(recordingTime)}
               </div>
-              <p className="text-slate-400 text-sm">{isRecordingPaused ? '录音已暂停，点击下方按钮继续' : '正在为您实时记录对话内容...'}</p>
+              <p className="text-slate-400 text-sm">
+                {!isRecordingActive
+                  ? '点击下方按钮，手动开始录音'
+                  : isRecordingPaused
+                  ? '录音已暂停，点击下方按钮继续'
+                  : '正在为您实时记录对话内容...'}
+              </p>
             </div>
 
-            <footer className="p-8 pb-12 flex items-center justify-center gap-12">
-              <div className="flex flex-col items-center gap-2">
-                <button 
-                  onClick={() => setIsRecordingPaused(!isRecordingPaused)}
-                  className={`w-16 h-16 ${isRecordingPaused ? 'bg-indigo-600' : 'bg-slate-100'} rounded-full flex items-center justify-center ${isRecordingPaused ? 'text-white' : 'text-slate-600'} shadow-lg active:scale-90 transition-all`}
-                >
-                  {isRecordingPaused ? <Play size={28} fill="currentColor" /> : <Pause size={28} fill="currentColor" />}
-                </button>
-                <span className="text-xs text-slate-400 font-medium">{isRecordingPaused ? '继续' : '暂停'}</span>
-              </div>
-
-              <div className="flex flex-col items-center gap-2">
-                <button 
+            <footer className="p-8 pb-12">
+              {!isRecordingActive ? (
+                <button
                   onClick={() => {
-                    const projectId = selectedProjectId;
-                    setIsRecordingActive(false);
+                    setIsRecordingActive(true);
                     setIsRecordingPaused(false);
-                    setIsRecordingView(false);
-                    setRecordingTime(0);
-                    
-                    const transcriptionMsgId = Date.now();
-                    setMessages(prev => [...prev, { 
-                      id: transcriptionMsgId,
-                      role: 'assistant', 
-                      content: '', 
-                      type: 'transcription' 
-                    }]);
-
-                    setTimeout(() => {
-                      setMessages(prev => prev.map(m => 
-                        m.id === transcriptionMsgId 
-                          ? { 
-                              ...m, 
-                              type: 'chat', 
-                              content: `录音已转写完成！以下是本次对话的摘要：\n\n**项目**: ${projects.find(p => p.id === projectId)?.name}\n**摘要**: 客户对园区配套设施表示满意，重点关注了电力供应稳定性。建议下次拜访时携带详细的配电方案。` 
-                            } 
-                          : m
-                      ));
-                    }, 3000);
                   }}
-                  className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-red-100 active:scale-90 transition-transform"
+                  className="w-full h-12 rounded-xl bg-indigo-600 text-white font-semibold text-base shadow-lg shadow-indigo-200 active:scale-[0.99] transition-all"
                 >
-                  <div className="w-6 h-6 bg-white rounded-sm" />
+                  开始录音
                 </button>
-                <span className="text-xs text-slate-400 font-medium">结束</span>
-              </div>
+              ) : (
+                <div className="flex items-center justify-center gap-12">
+                  <div className="flex flex-col items-center gap-2">
+                    <button 
+                      onClick={() => setIsRecordingPaused(!isRecordingPaused)}
+                      className={`w-16 h-16 ${isRecordingPaused ? 'bg-indigo-600' : 'bg-slate-100'} rounded-full flex items-center justify-center ${isRecordingPaused ? 'text-white' : 'text-slate-600'} shadow-lg active:scale-90 transition-all`}
+                    >
+                      {isRecordingPaused ? <Play size={28} fill="currentColor" /> : <Pause size={28} fill="currentColor" />}
+                    </button>
+                    <span className="text-xs text-slate-400 font-medium">{isRecordingPaused ? '继续' : '暂停'}</span>
+                  </div>
+
+                  <div className="flex flex-col items-center gap-2">
+                    <button 
+                      onClick={() => {
+                        const projectId = selectedProjectId;
+                        setIsRecordingActive(false);
+                        setIsRecordingPaused(false);
+                        setIsRecordingView(false);
+                        setRecordingTime(0);
+                        
+                        const transcriptionMsgId = Date.now();
+                        setMessages(prev => [...prev, { 
+                          id: transcriptionMsgId,
+                          role: 'assistant', 
+                          content: '', 
+                          type: 'transcription' 
+                        }]);
+
+                        setTimeout(() => {
+                          const currentProject = projects.find(p => p.id === projectId);
+                          const displayProjectName = getDisplayProjectName(currentProject?.name || '未关联项目');
+                          const projectCode = currentProject ? `XM211023${currentProject.id.toString().padStart(4, '0')}` : '未关联编号';
+                          const metadata = {
+                            source: 'a1',
+                            projectName: displayProjectName,
+                            projectCode,
+                            context: '经纪人推荐马桥500平大单层厂房，客户关注层高与面积。',
+                            feedback: '对6米层高感兴趣，但担忧加盖违建风险，明确要求5公里内找两个同类型房源。',
+                            decision: '待定',
+                            nextPlan: '筛选周边符合条件的厂房资源并跟进推荐。',
+                            archiveNote: '✅ 归档成功，该记录已归档至项目 5035050349859180880 的跟进历史中，后续如需补充其他沟通内容或绑定新录音，随时告知！'
+                          };
+                          setMessages(prev => prev.map(m => 
+                            m.id === transcriptionMsgId 
+                              ? { 
+                                  ...m, 
+                                  type: 'recording_analysis',
+                                  content: `录音分析完成\nA1分析结果\n\n沟通背景：${metadata.context}\n客户反馈：${metadata.feedback}\n结果判定：${metadata.decision}\n下步计划：${metadata.nextPlan}\n${metadata.archiveNote}`,
+                                  metadata
+                                } 
+                              : m
+                          ));
+                        }, 3000);
+                      }}
+                      className="w-16 h-16 rounded-full flex items-center justify-center text-white shadow-lg active:scale-90 transition-transform bg-red-500 shadow-red-100"
+                    >
+                      <div className="w-6 h-6 bg-white rounded-sm" />
+                    </button>
+                    <span className="text-xs text-slate-400 font-medium">结束</span>
+                  </div>
+                </div>
+              )}
             </footer>
           </motion.div>
         )}
@@ -1551,12 +1667,6 @@ export default function App() {
               <div className="bg-white rounded-3xl px-5 py-4 shadow-sm border border-white">
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-[16px] font-[400] text-black">待跟进项目</p>
-                  <button
-                    onClick={() => handleSend('制定今日拜访计划')}
-                    className="text-slate-500 text-sm font-medium inline-flex items-center gap-1 hover:text-indigo-600 transition-colors"
-                  >
-                    查看更多 <ChevronRight size={16} />
-                  </button>
                 </div>
 
                 <div className="space-y-4">
@@ -1617,6 +1727,8 @@ export default function App() {
                       }`}>
                         {msg.type === 'transcription' ? (
                           <TranscriptionCard />
+                        ) : msg.type === 'recording_analysis' ? (
+                          <RecordingAnalysisCard metadata={msg.metadata} />
                         ) : msg.role === 'assistant' && msg.content === propertyMatchMarkdown ? (
                           <PropertyMatchLayout />
                         ) : (
