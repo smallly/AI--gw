@@ -47,17 +47,17 @@ export interface AnalysisReport {
 }
 
 export async function analyzeProject(project: ProjectInfo): Promise<AnalysisReport> {
-  const prompt = `You are an industrial real-estate assistant. Analyze this project and return JSON only.
-Project:
-- Name: ${project.name}
-- Industry: ${project.industry}
-- Area: ${project.area}
-- Region: ${project.region}
-- Type: ${project.type}
-- Stage: ${project.stage}
-- Remarks: ${project.remarks || 'N/A'}
+  const prompt = `你是产业地产经纪人助手。请分析以下项目，并只返回 JSON，所有字段内容必须使用中文。
+项目信息：
+- 名称: ${project.name}
+- 行业: ${project.industry}
+- 面积: ${project.area}
+- 区域: ${project.region}
+- 类型: ${project.type}
+- 阶段: ${project.stage}
+- 备注: ${project.remarks || '无'}
 
-Return schema:
+返回 schema：
 {
   "industryAnalysis": "string",
   "projectAnalysis": "string",
@@ -93,11 +93,11 @@ export async function getDrillFeedback(
   transcript: { role: string; content: string }[],
   project?: ProjectInfo
 ) {
-  const prompt = `You are a sales coach. Evaluate the conversation and return JSON only.
-Context: ${project ? JSON.stringify(project) : 'general drill'}
-Transcript:\n${transcript.map((t) => `${t.role}: ${t.content}`).join('\n')}
+  const prompt = `你是销售教练。请评估下面对话并仅返回 JSON，所有字段内容必须使用中文。
+上下文: ${project ? JSON.stringify(project) : '通用演练'}
+对话记录:\n${transcript.map((t) => `${t.role}: ${t.content}`).join('\n')}
 
-Return schema:
+返回 schema：
 {
   "score": 85,
   "advantages": ["..."],
