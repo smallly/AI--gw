@@ -1809,7 +1809,7 @@ export default function App() {
                   </h2>
                   <div className="flex flex-wrap gap-4 text-[14px] text-slate-500 font-medium">
                     <span className="flex items-center gap-1">
-                      产业选址行业垂直大模型
+                      产业经纪人行业垂直大模型
                     </span>
                   </div>
                 </div>
